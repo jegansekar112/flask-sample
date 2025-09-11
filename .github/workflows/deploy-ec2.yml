@@ -1,0 +1,21 @@
+name: Deploy Backend to EC2
+
+on:
+  workflow_dispatch: 
+    inputs:
+      environment:
+        description: "deploy?"
+        required: true
+        default: "dev"
+
+jobs:
+  deploy_backend:
+    uses: jegansekar112/workflow/.github/workflows/deploy_ec2.yml@main
+    with:
+      EC2_HOST: 13.232.220.165
+      EC2_USER: ubuntu
+      APP_NAME: flask-sample
+      DEPLOY_PATH: /home/ubuntu/backend
+      BRANCH: main
+    secrets:
+      SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
