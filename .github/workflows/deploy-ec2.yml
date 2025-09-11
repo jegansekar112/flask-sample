@@ -1,21 +1,44 @@
-name: Deploy Backend to EC2
+name: Deploy Backend to EC2 (Direct Docker Build)
 
 on:
-  workflow_dispatch: 
-    inputs:
-      environment:
-        description: "deploy?"
-        required: true
-        default: "dev"
+  push:
+    branches: [ main ]
 
 jobs:
-  deploy_backend:
-    uses: jegansekar112/workflow/.github/workflows/deploy_ec2.yml@main
-    with:
-      EC2_HOST: 13.232.220.165
-      EC2_USER: ubuntu
-      APP_NAME: flask-sample
-      DEPLOY_PATH: /home/ubuntu/backend
-      BRANCH: main
-    secrets:
-      SSH_PRIVATE_KEY: ${{ secrets.EC2_SSH_KEY }}
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy project files to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: 13.232.220.165
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "."
+          target: "/home/ubuntu/backend"
+
+      - name: SSH into EC2 and build & run Docker
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 13.232.220.165
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ubuntu/backend
+
+            # Stop old container if running
+            docker stop backend || true
+            docker rm backend || true
+
+            # Build fresh image
+            docker build -t flask-app .
+
+            # Run new container
+            docker run -d --name backend -p 80:80 flask-app
+
+            # Check if container is running
+            docker ps
