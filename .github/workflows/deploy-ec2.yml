@@ -8,23 +8,31 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: 13.232.220.165
           username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_KEY }}
           script: |
+            # install git and docker if not already installed
+            sudo apt-get update -y
+            sudo apt-get install -y git docker.io
+            
+            # allow ubuntu user to run docker without sudo
+            sudo usermod -aG docker $USER || true
+
+            # pull or clone repo
             REPO_NAME="flask-sample"
-            cd $REPO_NAME || git clone https://github.com/jegansekar112/${GITHUB_REPOSITORY}.git $REPO_NAME
+            if [ ! -d "$REPO_NAME" ]; then
+              git clone https://github.com/jegansekar112/${GITHUB_REPOSITORY}.git $REPO_NAME
+            fi
             cd $REPO_NAME
             git pull origin main
+
+            # build and run docker
             docker build -t $REPO_NAME .
             docker stop $REPO_NAME || true
             docker rm $REPO_NAME || true
-            docker run -d --name $REPO_NAME -p 80:80 $REPO_NAME
+            docker run -d --name $REPO_NAME -p 5000:5000 $REPO_NAME
