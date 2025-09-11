@@ -1,5 +1,5 @@
-
-name: Deploy Backend to EC2
+# .github/workflows/deploy-main.yml
+name: Deploy Main Branch
 
 on:
   push:
@@ -7,39 +7,11 @@ on:
       - main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Deploy to EC2
-        uses: appleboy/ssh-action@v0.1.7
-        with:
-          host: 13.232.220.165
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            # Install git and docker if not already installed
-            sudo yum update -y
-            sudo yum install -y git docker
-
-            # start docker service
-            sudo service docker start
-
-            # allow ec2-user to run docker without sudo
-            sudo usermod -aG docker ec2-user || true
-
-            # pull or clone repo
-            REPO_NAME="flask-sample"
-            if [ ! -d "$REPO_NAME" ]; then
-                git clone https://github.com/jegansekar112/${REPO_NAME}.git $REPO_NAME
-            fi
-            cd $REPO_NAME
-            git pull origin main
-
-            # build and run docker
-            docker build -t $REPO_NAME .
-            docker stop $REPO_NAME || true
-            docker rm $REPO_NAME || true
-            docker run -d --name $REPO_NAME -p 5000:5000 $REPO_NAME
+  call-deploy:
+    uses: workflow/.github/workflows/deploy-ec2.yml
+    with:
+      repo_name: "flask-sample"
+      host: "13.232.220.165"
+      port: "5000"
+    secrets:
+      EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
