@@ -17,7 +17,7 @@ jobs:
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: 13.232.220.165
-          username: ubuntu
+          username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             REPO_NAME="flask-sample"
