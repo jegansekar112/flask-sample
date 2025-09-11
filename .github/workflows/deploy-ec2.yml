@@ -8,7 +8,7 @@ on:
 
 jobs:
   call-deploy:
-    uses: workflow/.github/workflows/deploy-ec2.yml
+    uses: jegansekar112/workflow/.github/workflows/deploy-ec2.yml
     with:
       repo_name: "flask-sample"
       host: "13.232.220.165"
