@@ -1,44 +1,30 @@
-name: Deploy Backend to EC2 (Direct Docker Build)
+name: Deploy Backend to EC2
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Copy project files to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: 13.232.220.165
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
-          source: "."
-          target: "/home/ubuntu/backend"
-
-      - name: SSH into EC2 and build & run Docker
-        uses: appleboy/ssh-action@v1.0.3
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v0.1.7
         with:
           host: 13.232.220.165
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
-            cd /home/ubuntu/backend
-
-            # Stop old container if running
-            docker stop backend || true
-            docker rm backend || true
-
-            # Build fresh image
-            docker build -t flask-app .
-
-            # Run new container
-            docker run -d --name backend -p 80:80 flask-app
-
-            # Check if container is running
-            docker ps
+            REPO_NAME="flask-sample"
+            cd $REPO_NAME || git clone https://github.com/jegansekar112/${GITHUB_REPOSITORY}.git $REPO_NAME
+            cd $REPO_NAME
+            git pull origin main
+            docker build -t $REPO_NAME .
+            docker stop $REPO_NAME || true
+            docker rm $REPO_NAME || true
+            docker run -d --name $REPO_NAME -p 80:80 $REPO_NAME
